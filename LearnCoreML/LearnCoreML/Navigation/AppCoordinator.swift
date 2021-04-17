@@ -7,16 +7,31 @@
 
 import UIKit
 
-class AppCoordinator {
+class AppCoordinator: MainMenuViewRouter {
     private let window: UIWindow
+    private let navigationController = UINavigationController(rootViewController: UIViewController())
     
     init(window: UIWindow) {
         self.window = window
     }
     
     func start() {
-        window.rootViewController = ViewController()
+        navigationController.setViewControllers([makeMainMenu()], animated: false)
+        window.rootViewController = navigationController
         window.makeKeyAndVisible()
+    }
+    
+    func showCarClassifier() {
+        navigationController.pushViewController(CarClassifierViewController.loadFromStoryboard(),
+                                                animated: true)
+    }
+}
+
+private extension AppCoordinator {
+    func makeMainMenu() -> MainMenuViewController {
+        let vc = MainMenuViewController()
+        vc.router = self
+        return vc
     }
 }
 
