@@ -47,7 +47,8 @@ class CarClassifierViewController: UIViewController, UIImagePickerControllerDele
                 let input = try CarClassifierInput(imageWith: cgImage)
                 let result = try self.carClassifier!.prediction(input: input)
                 
-                outputTextField.text = result.classLabelProbs.reduce("") {
+                let sortedLabelsProbs = result.classLabelProbs.sorted(by: { $0.key < $1.key })
+                outputTextField.text = sortedLabelsProbs.reduce("") {
                     $0 + "\($1.key): \(Int($1.value * 100))%\n"
                 }
             } catch let error {
