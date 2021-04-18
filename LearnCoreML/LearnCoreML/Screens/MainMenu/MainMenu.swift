@@ -9,6 +9,7 @@ import UIKit
 
 protocol MainMenuViewRouter: AnyObject {
     func showCarClassifier()
+    func showActionClassifier()
 }
 
 class MainMenuViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
@@ -38,12 +39,17 @@ class MainMenuViewController: UIViewController, UITableViewDataSource, UITableVi
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let row = sections[indexPath.section].rows[indexPath.row]
+        let title: String
         switch row {
         case .carClassifier:
-            let cell = tableView.dequeueReusableCell(withIdentifier: "\(MainMenuRow.self)") as! MainMenuRow
-            cell.configure(title: "Car Classifier")
-            return cell
+            title = "Car Classifier"
+        case .actionClassifier:
+            title = "Action Classifier"
         }
+        
+        let cell = tableView.dequeueReusableCell(withIdentifier: "\(MainMenuRow.self)") as! MainMenuRow
+        cell.configure(title: title)
+        return cell
     }
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
@@ -56,6 +62,8 @@ class MainMenuViewController: UIViewController, UITableViewDataSource, UITableVi
         switch sections[indexPath.section].rows[indexPath.row] {
         case .carClassifier:
             router?.showCarClassifier()
+        case .actionClassifier:
+            router?.showActionClassifier()
         }
     }
 }
@@ -66,6 +74,7 @@ private extension MainMenuViewController {
         
         enum Row: CaseIterable {
             case carClassifier
+            case actionClassifier
             
             var id: String {
                 "\(self)"
@@ -81,6 +90,6 @@ private extension MainMenuViewController {
     }
     
     static func makeDefaultSectionsSet() -> [Section] {
-        [Section.regular([.carClassifier])]
+        [Section.regular([.carClassifier, .actionClassifier])]
     }
 }

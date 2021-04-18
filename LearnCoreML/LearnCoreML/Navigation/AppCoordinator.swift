@@ -25,6 +25,11 @@ class AppCoordinator: MainMenuViewRouter {
         navigationController.pushViewController(CarClassifierViewController.loadFromStoryboard(),
                                                 animated: true)
     }
+    
+    func showActionClassifier() {
+        navigationController.pushViewController(ActionClassifierMainViewController(),
+                                                animated: true)
+    }
 }
 
 private extension AppCoordinator {
