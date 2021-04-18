@@ -27,43 +27,46 @@ class Camera {
     // Outputs
     private var captureSessionOutput: AVCaptureVideoDataOutput!
     
-    private var privateQueue = DispatchQueue(label: "com.capture.session.private.queue")
+    private var serialQueue = DispatchQueue(label: "com.camera.serial.queue")
     
     // MARK: - Public API
     
     func configure(camPosition: CamPosition = .front) {
-        
-        // Discover for devices and initialise properties
-        self.frontCamDevice = self.discoverFrontDevice()
-        self.backCamDevice = self.discoverBackDevice()
-        self.micDevice = self.discoverMicDevice()
-        
-        // Add Input to Discovered device (back camera)
-        self.position = camPosition
-        switch camPosition {
-        case .front:
-            self.deviceInput = try! AVCaptureDeviceInput(device: frontCamDevice)
-            self.currentCamDevice = frontCamDevice
-        case .back:
-            self.deviceInput = try! AVCaptureDeviceInput(device: backCamDevice)
-            self.currentCamDevice = backCamDevice
+        serialQueue.async { [weak self] in
+            guard let self = self else { return }
+            
+            // Discover for devices and initialise properties
+            self.frontCamDevice = self.discoverFrontDevice()
+            self.backCamDevice = self.discoverBackDevice()
+            self.micDevice = self.discoverMicDevice()
+            
+            // Add Input to Discovered device (back camera)
+            self.position = camPosition
+            switch camPosition {
+            case .front:
+                self.deviceInput = try! AVCaptureDeviceInput(device: self.frontCamDevice)
+                self.currentCamDevice = self.frontCamDevice
+            case .back:
+                self.deviceInput = try! AVCaptureDeviceInput(device: self.backCamDevice)
+                self.currentCamDevice = self.backCamDevice
+            }
+            
+            // Initialise AVCaptureSession
+            self.captureSession = AVCaptureSession()
+            
+            // Add Input to CaptureSession
+            self.captureSession.addInput(self.deviceInput)
+            
+            // Initialise CaptureOutput
+            self.configureCaptureOutput()
+            
+            // Add output to CaptureSession
+            self.captureSession.addOutput(self.captureSessionOutput)
         }
-        
-        // Initialise AVCaptureSession
-        self.captureSession = AVCaptureSession()
-        
-        // Add Input to CaptureSession
-        captureSession.addInput(self.deviceInput)
-        
-        // Initialise CaptureOutput
-        self.configureCaptureOutput()
-        
-        // Add output to CaptureSession
-        captureSession.addOutput(captureSessionOutput)
     }
     
     func bind(to preview: AVCaptureVideoPreviewLayer) {
-        privateQueue.async { [weak self] in
+        serialQueue.async { [weak self] in
             guard let self = self else { return }
             preview.session = self.captureSession
         }
@@ -71,46 +74,50 @@ class Camera {
     
     /// Asynchronously starts the session
     func start() {
-        privateQueue.async { [weak self] in
+        serialQueue.async { [weak self] in
             self?.captureSession.startRunning()
         }
     }
     
     /// Asynchronously stops the session
     func stop() {
-        privateQueue.async { [weak self] in
+        serialQueue.async { [weak self] in
             self?.captureSession.stopRunning()
         }
     }
     
     func switchCamPosition() {
-        let device: AVCaptureDevice
-        
-        // Find current Device
-        switch self.position {
-        case .front:
-            device = backCamDevice
-        case .back:
-            device = frontCamDevice
+        serialQueue.async { [weak self] in
+            guard let self = self else { return }
+            
+            let device: AVCaptureDevice
+            
+            // Find current Device
+            switch self.position {
+            case .front:
+                device = self.backCamDevice
+            case .back:
+                device = self.frontCamDevice
+            }
+            
+            // Return if switching device is the same as current
+            guard !device.isEqual(self.currentCamDevice) else {
+                return
+            }
+            
+            // Save switching to device
+            self.currentCamDevice = device
+            self.position.toggle()
+            
+            // Remove old device input from Capture Session
+            self.captureSession.removeInput(self.deviceInput)
+            
+            // Create new device input with new device
+            self.deviceInput = try! AVCaptureDeviceInput(device: self.currentCamDevice)
+            
+            // Add created device input to CaptureSession
+            self.captureSession.addInput(self.deviceInput)
         }
-        
-        // Return if switching device is the same as current
-        guard !device.isEqual(self.currentCamDevice) else {
-            return
-        }
-        
-        // Save switching to device
-        self.currentCamDevice = device
-        self.position.toggle()
-        
-        // Remove old device input from Capture Session
-        self.captureSession.removeInput(self.deviceInput)
-        
-        // Create new device input with new device
-        self.deviceInput = try! AVCaptureDeviceInput(device: self.currentCamDevice)
-        
-        // Add created device input to CaptureSession
-        self.captureSession.addInput(self.deviceInput)
     }
     
     func setSampleBufferDelegate(_ sampleBufferDelegate: AVCaptureVideoDataOutputSampleBufferDelegate?, queue sampleBufferCallbackQueue: DispatchQueue?) {
