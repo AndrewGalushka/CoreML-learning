@@ -7,7 +7,14 @@
 
 import AVFoundation
 
-class Camera {
+class Camera: NSObject {
+    
+    // MARK: - Public Properties
+    
+    var sampleBufferOutput: ((CMSampleBuffer) -> Void)?
+    var sampleBufferDropOutput: ((CMSampleBuffer) -> Void)?
+    
+    // MARK: - Private Properties
     
     // Devices
     private var frontCamDevice: AVCaptureDevice!
@@ -117,11 +124,9 @@ class Camera {
             
             // Add created device input to CaptureSession
             self.captureSession.addInput(self.deviceInput)
+            
+            self.captureSessionOutput.setSampleBufferDelegate(self, queue: self.serialQueue)
         }
-    }
-    
-    func setSampleBufferDelegate(_ sampleBufferDelegate: AVCaptureVideoDataOutputSampleBufferDelegate?, queue sampleBufferCallbackQueue: DispatchQueue?) {
-        captureSessionOutput.setSampleBufferDelegate(sampleBufferDelegate, queue: sampleBufferCallbackQueue)
     }
     
     // MARK: - Private API
@@ -190,5 +195,15 @@ extension Camera {
                 self = .front
             }
         }
+    }
+}
+
+extension Camera: AVCaptureVideoDataOutputSampleBufferDelegate {
+    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        self.sampleBufferOutput?(sampleBuffer)
+    }
+    
+    func captureOutput(_ output: AVCaptureOutput, didDrop sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        self.sampleBufferDropOutput?(sampleBuffer)
     }
 }

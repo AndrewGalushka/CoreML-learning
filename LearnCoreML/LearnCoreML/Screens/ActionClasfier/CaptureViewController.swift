@@ -16,9 +16,15 @@ class CaptureViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         captureSession.configure()
-        capturePreview.embed(to: view)
+        capturePreview.embed(to: view, safeArea: true)
         captureSession.bind(to: capturePreview.previewLayer)
-        captureSession.setSampleBufferDelegate(self, queue: nil)
+        captureSession.sampleBufferDropOutput = { [weak self] sampleBuffer in
+            guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
+                return
+            }
+            
+            self?.posesDetector.process(pixelBuffer: imageBuffer)
+        }
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -28,15 +34,5 @@ class CaptureViewController: UIViewController {
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         captureSession.stop()
-    }
-}
-
-extension CaptureViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
-    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
-            return
-        }
-        
-        posesDetector.process(pixelBuffer: pixelBuffer)
     }
 }
