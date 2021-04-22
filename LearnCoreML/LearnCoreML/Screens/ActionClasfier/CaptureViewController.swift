@@ -18,7 +18,7 @@ class CaptureViewController: UIViewController {
         captureSession.configure()
         capturePreview.embed(to: view, safeArea: true)
         captureSession.bind(to: capturePreview.previewLayer)
-        captureSession.sampleBufferDropOutput = { [weak self] sampleBuffer in
+        captureSession.sampleBufferOutput = { [weak self] sampleBuffer in
             guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
                 return
             }

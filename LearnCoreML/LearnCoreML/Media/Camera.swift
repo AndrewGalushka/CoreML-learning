@@ -29,7 +29,7 @@ class Camera: NSObject {
     private var deviceInput: AVCaptureDeviceInput!
     
     // CaptureSession
-    private var captureSession: AVCaptureSession!
+    private var captureSession = AVCaptureSession()
     
     // Outputs
     private var captureSessionOutput: AVCaptureVideoDataOutput!
@@ -64,11 +64,8 @@ class Camera: NSObject {
             // Add Input to CaptureSession
             self.captureSession.addInput(self.deviceInput)
             
-            // Initialise CaptureOutput
-            self.configureCaptureOutput()
-            
-            // Add output to CaptureSession
-            self.captureSession.addOutput(self.captureSessionOutput)
+            // Initialise CaptureOutput and add output to CaptureSession
+            self.addCaptureOutput()
         }
     }
     
@@ -124,8 +121,6 @@ class Camera: NSObject {
             
             // Add created device input to CaptureSession
             self.captureSession.addInput(self.deviceInput)
-            
-            self.captureSessionOutput.setSampleBufferDelegate(self, queue: self.serialQueue)
         }
     }
     
@@ -169,9 +164,14 @@ class Camera: NSObject {
 }
 
 private extension Camera {
-    func configureCaptureOutput() {
+    func addCaptureOutput() {
         self.captureSessionOutput = AVCaptureVideoDataOutput()
+        self.captureSession.addOutput(self.captureSessionOutput)
+        self.captureSessionOutput.connection(with: .video)?.isVideoMirrored = true
+        
         self.captureSessionOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA]
+        captureSessionOutput.connection(with: .video)?.videoOrientation = .portrait
+        captureSessionOutput.connection(with: .video)?.isVideoMirrored = true
         
         captureSessionOutput.connection(with: .video)?.isEnabled = true
         if let connection = captureSessionOutput.connection(with: .video) {
@@ -179,6 +179,8 @@ private extension Camera {
                 connection.isCameraIntrinsicMatrixDeliveryEnabled = true
             }
         }
+        
+        captureSessionOutput.setSampleBufferDelegate(self, queue: serialQueue)
     }
 }
 

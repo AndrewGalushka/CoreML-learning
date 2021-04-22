@@ -8,7 +8,6 @@
 import Vision
 
 class BodyPoseDetector {
-    
     func process(pixelBuffer: CVPixelBuffer) {
         DispatchQueue.global().async {
             do {
@@ -16,9 +15,11 @@ class BodyPoseDetector {
                 let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer)
                 try handler.perform([request])
                 
-                if let poses = request.results {
-                    self.log(poses.description)
+                guard let poses = request.results else {
+                    return
                 }
+                
+                self.log(poses.description)
             } catch let error {
                 self.log(error.localizedDescription)
             }
